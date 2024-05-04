@@ -4,7 +4,6 @@ import inCallManager from 'react-native-incall-manager';
 import JsSIP, { UA } from 'react-native-jssip';
 import { OutgoingEvent, OutgoingListener, RTCSession, RTCSessionEventMap } from 'react-native-jssip/lib/RTCSession';
 import { CallOptions, UAConfiguration } from 'react-native-jssip/lib/UA';
-const { AudioSwitcher } = NativeModules;
 
 import {
   RTCPeerConnection,
@@ -61,8 +60,8 @@ const App: React.FC = () => {
   useEffect(() => {
 
     listOfDevices();
-    //JsSIP.debug.enable('JsSIP:* JsSIP:Transport JsSIP:RTCSession*');
-    JsSIP.debug.enable('JsSIP:*');
+    // JsSIP.debug.enable('JsSIP:* JsSIP:Transport JsSIP:RTCSession*');
+    // JsSIP.debug.enable('JsSIP:*');
     // JsSIP.debug.enable('*');
     const socketWs = new JsSIP.WebSocketInterface('ws://172.16.2.2:3033/ws');
     const socketWss = new JsSIP.WebSocketInterface('wss://live.farabipharma.ir:3034/ws');
@@ -74,21 +73,33 @@ const App: React.FC = () => {
       display_name: "2030",
       register: true,
       user_agent: 'p-line',
+      connection_recovery_max_interval: 3,
+      connection_recovery_min_interval: 10,
+      register_expires: 60,
+      registrar_server: "172.16.2.2:5060",
+      contact_uri: "sip:2030@172.16.2.2:5060",
     };
 
     ua.current = new JsSIP.UA(configuration);
 
-    ua.current?.addListener("registered", (e: any) => {
-      // console.log('====================================');
-      // console.log(e.response.data);
-      // console.log('====================================');
-    });
+    // ua.current?.addListener("registered", (e: any) => {
+    //   console.log('====================================');
+    //   console.log(e.response.data);
+    //   console.log('====================================');
+    // });
 
-    ua.current?.addListener("newRTCSession", (e: any) => {
-      // console.log('====================================');
-      // console.log(e.originator);
-      // console.log('====================================');
-    });
+    // ua.current?.addListener("newRTCSession", (e: any) => {
+    //   // console.log('====================================');
+    //   // console.log(e.originator);
+    //   // console.log('====================================');
+    // });
+
+    ua.current?.on("connected", (e: any) => { console.log('connected', e); });
+    ua.current?.on("connecting", (e: any) => { console.log('connecting', e); });
+    ua.current?.on("disconnected", (e: any) => { console.log('disconnected', e); });
+    ua.current?.on("registered", (e: any) => { console.log('registered', e); });
+    ua.current?.on("registrationExpiring", (e: any) => { console.log('registrationExpiring', e); ua.current?.start(); });
+    ua.current?.on("registrationFailed", (e: any) => { console.log('registrationFailed', e); });
 
     ua.current.start();
 
@@ -111,7 +122,7 @@ const App: React.FC = () => {
             max: 1440
           },
           deviceId: {
-            exact: "0",
+            exact: "1",
           }
         },
 
@@ -129,14 +140,13 @@ const App: React.FC = () => {
       const mediaStream = new MediaStream(tracks);
 
       setLocalStream(mediaStream);
-      AudioSwitcher.switchAudioOutput(true);
     };
 
     createMediaStream();
   }, []);
 
 
-  function makeId(length: number) {
+  function makeId(length: number, split = true) {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const charactersLength = characters.length;
@@ -144,7 +154,7 @@ const App: React.FC = () => {
     while (counter < length) {
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
       counter += 1;
-      if (counter % 5 === 0) {
+      if (split && counter % 5 === 0) {
         result += '-'
       }
     }
