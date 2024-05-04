@@ -11,7 +11,11 @@
   },
   "dependencies": {
     "react": "18.2.0",
-    "react-native": "0.74.0"
+    "react-native": "0.74.0",
+    "react-native-incall-manager": "^4.2.0",
+    "react-native-jssip": "^3.7.6",
+    "react-native-webrtc": "^118.0.7",
+    "text-encoding": "^0.7.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
