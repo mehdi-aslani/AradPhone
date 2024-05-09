@@ -1,0 +1,273 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { transformer } from './metro.config';
+import AradWebRtcPhone, { SpeakerType } from './components/AradWebRtcPhone';
+
+
+const App = () => {
+
+  const [dial, setDial] = useState<string>("");
+  const [wsStatus, setWsStatus] = useState<string>("...");
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const aradPhone = useRef<AradWebRtcPhone>();
+
+
+  useEffect(() => {
+    setWsStatus("Arad Phone");
+
+    aradPhone.current = new AradWebRtcPhone({
+      SipPassword: '2030',
+      SipPort: 5060,
+      SipServer: '172.16.2.2',
+      SipUser: '2030',
+      WssUrl: 'wss://live.farabipharma.ir:3034/ws',
+      UserAgentStatus: setWsStatusEvent,
+    });
+
+    aradPhone.current?.Connect();
+
+    return () => {
+      aradPhone.current?.Disconnect();
+    };
+  }, []);
+
+  const setWsStatusEvent = (e: string) => {
+    if (e == "connected") {
+      aradPhone.current?.Register();
+    }
+    setWsStatus(e);
+  }
+
+  const toggleMenu = () => {
+    setIsMenuVisible(!isMenuVisible);
+  };
+
+  const handleMenuOption = (option: number) => {
+    // You can perform actions based on the selected option here
+    Alert.alert(`Option ${option} selected!`);
+    toggleMenu(); // Close the menu after selecting an option
+  };
+
+  const pressDialKey = (key: string) => {
+    setDial(dial + key);
+  }
+
+  return (
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
+        <Icon name="bars" size={24} color="black" />
+      </TouchableOpacity>
+
+      {/* Display */}
+      <View style={styles.display}>
+        <Text style={styles.displayText}>Arad Phone</Text>
+        <View style={styles.horizontalLine} />
+        <Text>{dial}</Text>
+      </View>
+
+      <Text>{wsStatus}</Text>
+
+      {/* Dial Keys */}
+      <View style={styles.dialKeysContainer}>
+
+        <View style={styles.row}>
+          <TouchableOpacity onPress={() => {
+            aradPhone.current?.createMediaStream().then(stream => {
+              aradPhone.current?.call(dial, stream, SpeakerType.Speaker);
+            }, error => {
+              console.log(error);
+
+            });
+
+          }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}><Icon name="volume-control-phone" size={30} /></Text>
+          </TouchableOpacity>
+
+
+          <TouchableOpacity onPress={() => {
+            aradPhone.current?.Hangup();
+          }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}><Icon name="download" size={30} /></Text>
+          </TouchableOpacity>
+
+
+          <TouchableOpacity onPress={() => {
+            if (dial.length > 0) {
+              setDial(dial.slice(0, -1));
+            }
+          }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}><Icon name="chevron-circle-left" size={30} /></Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.row}>
+          <TouchableOpacity onPress={() => {
+            aradPhone.current?.Hold();
+          }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}><Icon name="pause-circle-o" size={30} /></Text>
+          </TouchableOpacity>
+
+
+          <TouchableOpacity onPress={() => { pressDialKey("2") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}><Icon name="play-circle" size={30} /></Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { pressDialKey("3") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}><Icon name="retweet" size={30} /></Text>
+          </TouchableOpacity>
+        </View>
+
+
+        <View style={styles.row}>
+          <TouchableOpacity onPress={() => { pressDialKey("1") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>1</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { pressDialKey("2") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>2</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { pressDialKey("3") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>3</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.row}>
+          <TouchableOpacity onPress={() => { pressDialKey("4") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>4</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { pressDialKey("5") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>5</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { pressDialKey("6") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>6</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.row}>
+          <TouchableOpacity onPress={() => { pressDialKey("7") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>7</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { pressDialKey("8") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>8</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { pressDialKey("9") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>9</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.row}>
+          <TouchableOpacity onPress={() => { pressDialKey("*") }} style={[styles.dialKey, styles.specialKey]}>
+            <Text style={styles.dialKeyText}>*</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { pressDialKey("0") }} style={styles.dialKey}>
+            <Text style={styles.dialKeyText}>0</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { pressDialKey("#") }} style={[styles.dialKey, styles.specialKey]}>
+            <Text style={styles.dialKeyText}>#</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Menu Modal */}
+        <Modal visible={isMenuVisible} transparent animationType="fade">
+          <View style={styles.modalContainer}>
+            <TouchableOpacity style={styles.modalBackground} onPress={toggleMenu} />
+            <View style={styles.menu}>
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption(1)}>
+                <Text>Option 1</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption(2)}>
+                <Text>Option 2</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption(3)}>
+                <Text>Option 3</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+      </View>
+
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  menuButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 1,
+  },
+  display: {
+    width: '90%',
+    height: '30%',
+    backgroundColor: '#c0c0c0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    marginTop: 80,
+    marginBottom: 20,
+  },
+  displayText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  dialKeysContainer: {
+    width: '80%',
+    height: '60%',
+    justifyContent: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+  },
+  dialKey: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  specialKey: {
+    backgroundColor: '#d3d3d3',
+  },
+  dialKeyText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  horizontalLine: {
+    borderBottomColor: 'black',
+    borderBottomWidth: 1,
+    width: '60%',
+    marginTop: 10,
+    marginBottom: 50,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  menu: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 5,
+  },
+  menuOption: {
+    padding: 10,
+  },
+});
+
+export default App;
